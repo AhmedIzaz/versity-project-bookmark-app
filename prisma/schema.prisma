@@ -25,9 +25,12 @@ model User {
 model Bookmark {
   id          Int        @id @default(autoincrement())
   title       String
+  thumbnail   String?
   description String?
-  link        String
-  tags        String[]
+  link        String?
+  mainLink    String?
+  shortCode   String?
+  tags        String
   createdAt   DateTime   @default(now())
   createdBy   Int
   favourite   Boolean    @default(false)

@@ -2,3 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
+.text-stroke-white {
+  -webkit-text-stroke: .3px white;
+}

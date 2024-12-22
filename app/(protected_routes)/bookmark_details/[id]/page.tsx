@@ -1,0 +1,98 @@
+"use client";
+
+import CommonTitle from "@/app/_components/common.title";
+import PageWrapper from "@/app/_components/pageWrapper";
+import { getBookmarkDetails } from "@/app/server/user.server";
+import { BackwardOutlined, CopyOutlined } from "@ant-design/icons";
+import { Button, message } from "antd";
+import Image from "next/image";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const BookmarkDetails = () => {
+  const { id } = useParams();
+  const { back, push } = useRouter();
+  const [bookmark, setBookmark] = useState<TBookmark>();
+  useEffect(() => {
+    const fetch = async () => {
+      if (id) {
+        const response = await getBookmarkDetails(+id);
+        setBookmark(response!);
+      }
+    };
+    fetch();
+  }, [id]);
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (textToCopy: string) => {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      message.success("Copied to clipboard!");
+    } catch (err) {
+      message.error("Failed to copy!");
+    }
+  };
+  return (
+    <>
+      <PageWrapper>
+        <div className="flex items-center px-4">
+          <BackwardOutlined className="text-lg cursor-pointer" onClick={back} />
+          <CommonTitle text="Bookmark Details" size="MEDIUM" />
+        </div>
+        {bookmark ? (
+          <div className="max-w-full px-10 flex flex-col gap-4">
+            <CommonTitle
+              text={bookmark?.title}
+              size="LARGE"
+              className="text-center px-10"
+            />
+            {bookmark.thumbnail ? (
+              <div className="flex justify-center items-center ">
+                <Image
+                  src={bookmark.thumbnail!}
+                  alt="as"
+                  className="w-[50%] rounded-md shadow-lg"
+                  width={500}
+                  height={500}
+                />
+              </div>
+            ) : (
+              <></>
+            )}
+            {bookmark.link ? (
+              <div className="flex flex-col justify-between items-center ">
+                <CommonTitle text="URL" size="SMALL" className="!p-0" />
+                <p onClick={() => push(bookmark.link!)}>{bookmark.link}</p>
+                <Button
+                  type="primary"
+                  icon={<CopyOutlined />}
+                  onClick={() => handleCopy(bookmark.link!)}
+                  disabled={copied} // Disable button after copying
+                >
+                  {copied ? "Copied!" : "Copy to Clipboard"}
+                </Button>
+              </div>
+            ) : (
+              <></>
+            )}
+            <div className="flex flex-col justify-between items-center ">
+              <CommonTitle text="Tags" size="SMALL" className="!p-0" />
+              <p>{bookmark.tags}</p>
+            </div>
+            <div className="flex flex-col justify-between items-center pb-10">
+              <CommonTitle text="Description" size="SMALL" className="!p-0" />
+              <p>{bookmark.description}</p>
+            </div>
+          </div>
+        ) : (
+          <></>
+        )}
+      </PageWrapper>
+    </>
+  );
+};
+
+export default BookmarkDetails;

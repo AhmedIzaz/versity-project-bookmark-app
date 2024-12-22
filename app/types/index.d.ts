@@ -78,9 +78,27 @@ type TUser = {
   name: string;
   email: string;
   password?: string | null;
-  profilePicture?: string| null;
+  profilePicture?: string | null;
 };
 
 type TLoginResponse = TUser & {
   accessToken: string;
+};
+
+type TBookmark = {
+  id: number;
+  title: string;
+  description?: string | null;
+  thumbnail?: string | null;
+  link?: string | null;
+  mainLink?: string | null;
+  tags?: string | null;
+  createdAt: any;
+  createdBy: number;
+  favourite: boolean;
+  visibility: "PUBLIC" | "PRIVATE";
+};
+
+type TBookmarkListFilter = {
+  search?: string;
 };
