@@ -2,25 +2,33 @@
 
 import CommonTitle from "@/app/_components/common.title";
 import PageWrapper from "@/app/_components/pageWrapper";
-import { getBookmarkDetails } from "@/app/server/user.server";
+import useStore from "@/app/_stores";
+import {
+  getBookmarkDetails,
+  updateBookmarkVisibility,
+} from "@/app/server/user.server";
 import { BackwardOutlined, CopyOutlined } from "@ant-design/icons";
-import { Button, message } from "antd";
+import { Button, message, Switch } from "antd";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const BookmarkDetails = () => {
-  const { id } = useParams();
+  const { user } = useStore((store) => store);
+  const param = useParams<{ id: any }>();
+  const { id } = param ?? {};
   const { back, push } = useRouter();
   const [bookmark, setBookmark] = useState<TBookmark>();
+
+  const fetch = async () => {
+    if (id) {
+      const response = await getBookmarkDetails(+id);
+      setBookmark(response!);
+    }
+  };
+
   useEffect(() => {
-    const fetch = async () => {
-      if (id) {
-        const response = await getBookmarkDetails(+id);
-        setBookmark(response!);
-      }
-    };
     fetch();
   }, [id]);
 
@@ -39,6 +47,7 @@ const BookmarkDetails = () => {
     <>
       <PageWrapper>
         <div className="flex items-center px-4">
+          {" "}
           <BackwardOutlined className="text-lg cursor-pointer" onClick={back} />
           <CommonTitle text="Bookmark Details" size="MEDIUM" />
         </div>
@@ -86,6 +95,24 @@ const BookmarkDetails = () => {
               <CommonTitle text="Description" size="SMALL" className="!p-0" />
               <p>{bookmark.description}</p>
             </div>
+            {bookmark.createdBy === user?.id && (
+              <div className="flex flex-col justify-between items-center pb-10">
+                <CommonTitle text="Visibility" size="SMALL" className="!p-0" />
+                <p>
+                  {bookmark.visibility === "PRIVATE" ? "Private" : "Public"}
+                </p>
+                <Switch
+                  checked={bookmark.visibility !== "PRIVATE"}
+                  onChange={(checked) => {
+                    const exe = async () => {
+                      await updateBookmarkVisibility(bookmark.id, checked);
+                      await fetch();
+                    };
+                    exe();
+                  }}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <></>

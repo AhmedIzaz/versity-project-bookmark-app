@@ -16,7 +16,7 @@ const useAuth = () => {
   } = useStore((state) => state);
 
   const atAuthRoute = useMemo(
-    () => unAuthenticatedRoutes.includes(pathname),
+    () => unAuthenticatedRoutes.includes(pathname!),
     [pathname]
   );
 

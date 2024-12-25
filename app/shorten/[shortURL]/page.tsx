@@ -1,10 +1,14 @@
 "use client";
+import useStore from "@/app/_stores";
 import { getBookmarkByShortCode } from "@/app/server/user.server";
+import { message } from "antd";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useRef } from "react";
 
 const ShortURLPage = () => {
-  const { shortURL } = useParams();
+  const { user } = useStore((store) => store);
+  const para = useParams<{ shortURL: any }>();
+  const { shortURL } = para ?? {};
   const { back } = useRouter();
   const buttonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -13,11 +17,20 @@ const ShortURLPage = () => {
     const fetcher = async () => {
       if (shortURL) {
         const response = await getBookmarkByShortCode(shortURL as string);
-        if (response) {
-          window.open(response.mainLink!, "_blank");
-          buttonRef?.current?.click();
+        if (
+          response?.visibility === "PUBLIC" ||
+          (response?.visibility === "PRIVATE" &&
+            response.createdBy === user?.id)
+        ) {
+          if (response) {
+            window.open(response.mainLink!, "_blank");
+            buttonRef?.current?.click();
+          } else {
+            // handle case when no bookmark found
+          }
         } else {
-          // handle case when no bookmark found
+          message.warning("You are not authorized to access this bookmark.");
+          back();
         }
       }
     };

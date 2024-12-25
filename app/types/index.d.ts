@@ -93,6 +93,7 @@ type TBookmark = {
   link?: string | null;
   mainLink?: string | null;
   tags?: string | null;
+  shortCode?: string | null;
   createdAt: any;
   createdBy: number;
   favourite: boolean;

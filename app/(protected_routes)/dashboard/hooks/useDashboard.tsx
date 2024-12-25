@@ -56,6 +56,7 @@ const useDashboard = () => {
       setLoading(true);
       try {
         const { data, total } = await getBookmarkList(
+          user?.id!,
           filters,
           newPagination ?? pagination,
           newSorter ?? sortInfo
@@ -138,7 +139,6 @@ const useDashboard = () => {
             const file = (thumbnail as TUploadedFile).file;
             formData.append("thumbnail", file);
             thumbnailUrl = await uploadAndGetFileURL(formData, "thumbnail");
-            
           }
           const payload: TBookmarkForm = {
             title,

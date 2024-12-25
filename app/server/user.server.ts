@@ -5,6 +5,7 @@ import CacheKeys from "../config/cacheKey";
 import globalPrisma from "../config/prismaConfig";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { exec } from "child_process";
 import { TablePaginationConfig } from "antd";
 import { SorterResult } from "antd/es/table/interface";
 import { TBookmarkForm } from "../types/commonType";
@@ -113,6 +114,7 @@ export const userSignup = async (payload: TUser) => {
 };
 
 export const getBookmarkList = async (
+  userId: number,
   filters: TBookmarkListFilter,
   pagination?: TablePaginationConfig,
   sorter?: SorterResult<any>
@@ -133,14 +135,50 @@ export const getBookmarkList = async (
       skip,
       take,
       orderBy,
-      where: {
-        OR: [{ title: { contains: search } }, { tags: { contains: search } }],
-      },
     };
     const [data, total] = await Promise.all([
-      globalPrisma.bookmark.findMany(args),
-      globalPrisma.bookmark.count({ where: args.where }),
+      globalPrisma.bookmark.findMany({
+        ...args,
+        where: {
+          OR: [
+            { visibility: "PUBLIC" },
+            {
+              AND: [
+                { visibility: "PRIVATE" },
+                { createdBy: userId }, // Show private bookmarks created by the logged-in user
+              ],
+            },
+          ],
+          AND: search
+            ? {
+                OR: [
+                  { title: { contains: search, mode: "insensitive" } },
+                  { tags: { contains: search, mode: "insensitive" } },
+                ],
+              }
+            : undefined,
+        },
+      }),
+      globalPrisma.bookmark.count({
+        where: {
+          OR: [
+            { visibility: "PUBLIC" },
+            {
+              AND: [{ visibility: "PRIVATE" }, { createdBy: userId }],
+            },
+          ],
+          AND: search
+            ? {
+                OR: [
+                  { title: { contains: search, mode: "insensitive" } },
+                  { tags: { contains: search, mode: "insensitive" } },
+                ],
+              }
+            : undefined,
+        },
+      }),
     ]);
+
     return { data, total };
   } catch (error: any) {
     throw new Error(error?.message ?? "Error during fetching bookmarks");
@@ -164,7 +202,16 @@ export const createUpdateBookmark = async (
     thumbnail = (thumbnail as string) ?? undefined;
 
     const shortCode = shortid.generate();
-    const shortURL = `http://localhost:3000/shorten/${shortCode}`;
+
+    const isLocalFilePath = /^[a-zA-Z]:\\|^\//.test(link!);
+
+    let shortURL = `http://localhost:3000/shorten/${shortCode}`;
+    let modifiedLink;
+    if (isLocalFilePath) {
+      modifiedLink = `file:///${link?.replace(/\\/g, "/")}`;
+    } else {
+      modifiedLink = link;
+    }
 
     let theBookmark = undefined;
 
@@ -175,7 +222,7 @@ export const createUpdateBookmark = async (
           title,
           thumbnail,
           link: shortURL,
-          mainLink: link,
+          mainLink: modifiedLink,
           shortCode,
           tags: tags!,
           visibility: visibility ? "PUBLIC" : "PRIVATE",
@@ -189,7 +236,7 @@ export const createUpdateBookmark = async (
           title: title!,
           thumbnail,
           link: shortURL,
-          mainLink: link!,
+          mainLink: modifiedLink!,
           tags: tags!,
           shortCode,
           visibility: visibility ? "PUBLIC" : "PRIVATE",
@@ -209,6 +256,22 @@ export const createUpdateBookmark = async (
     return message;
   } catch (error: any) {
     throw new Error(error?.message ?? "Error during bookmarks action");
+  }
+};
+
+export const updateBookmarkVisibility = async (
+  id: number,
+  checked: boolean
+) => {
+  try {
+    await globalPrisma.bookmark.update({
+      where: { id },
+      data: { visibility: checked ? "PUBLIC" : "PRIVATE" },
+    });
+  } catch (error: any) {
+    throw new Error(
+      error?.message ?? "Error during updating bookmark visibility"
+    );
   }
 };
 
@@ -287,4 +350,12 @@ export const uploadAndGetFileURL = async (obj: FormData, field: string) => {
   } catch (error) {
     console.error("Error getting form data:", error);
   }
+};
+
+export const openLocal = async (filePath: string) => {
+  exec(`start "" "${filePath}"`, (error) => {
+    if (error) {
+      console.error("Error opening file:", error);
+    }
+  });
 };
