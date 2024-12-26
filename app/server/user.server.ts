@@ -14,7 +14,7 @@ import { mkdir, stat, writeFile } from "fs/promises";
 import Mime from "mime";
 const { USER_BY_EMAIL, BOOKMARK_BY_ID } = CacheKeys;
 const JWT_SECRET = process.env.JWT_SECRET || "thisisasecretkeygeneration";
-
+import nodemailer from "nodemailer";
 enum OrderEnum {
   descend = "desc",
   ascend = "asc",
@@ -358,4 +358,47 @@ export const openLocal = async (filePath: string) => {
       console.error("Error opening file:", error);
     }
   });
+};
+
+export const sendOTP = async (email: string) => {
+  try {
+    // Generate OTP and email payload
+    const OTP = Math.floor(100000 + Math.random() * 900000).toString();
+    let emailTransporter = nodemailer.createTransport({
+      host: "sandbox.smtp.mailtrap.io",
+      port: 2525,
+      auth: {
+        user: "ee89808678a152",
+        pass: "b79c41cc779da9",
+      },
+    });
+    await emailTransporter.sendMail({
+      from: '"Bookmark" <no-reply@yourdomain.com>',
+      to: email,
+      subject: "Password forgot OTP",
+      html: `
+  <p>Your email verification OTP: <strong>${OTP}</strong></p>
+  <p>This OTP is valid for 1 hour.</p>
+`,
+    });
+    const hashedPassword = await bcrypt.hash(OTP!, 10);
+    await globalPrisma.user.update({
+      where: { email },
+      data: { password: hashedPassword },
+    });
+  } catch (ero: any) {
+    console.log(ero.message);
+  }
+};
+
+export const changePassword = async (email: string, password: string) => {
+  try {
+    const hashedPassword = await bcrypt.hash(password!, 10);
+    await globalPrisma.user.update({
+      where: { email },
+      data: { password: hashedPassword },
+    });
+  } catch (err: any) {
+    console.log(err.message);
+  }
 };

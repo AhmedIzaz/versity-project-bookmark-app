@@ -1,24 +1,22 @@
 "use client";
 import Image from "next/image";
-import { Button, Form } from "antd";
+import { Button, Form, Input, message } from "antd";
 import classNames from "classnames";
 import { useState } from "react";
 import ForgotPasswordForm from "../_components/forgot.password.form";
+import { sendOTP } from "@/app/server/user.server";
 
 export default function ForgotPasswordPage() {
   const [form] = Form.useForm();
   const [is_succeed, setIsSucceed] = useState(false);
   const [is_submit_loading, setIsSubmitLoading] = useState(false);
   const [success_msg, setSuccessMsg] = useState("");
+  
 
   const handle_on_submit = async ({ email }: { email: string }) => {
-    setIsSubmitLoading(true);
-    setSuccessMsg("");
     try {
-      // const { data } = await forgotPassword({ email }) // Assuming role is 'admin'
-      // console.log('response: ', data)
-      // setSuccessMsg(data.message || 'An Email has been sent.')
-      setIsSucceed(true);
+      await sendOTP(email);
+      alert("Password send to you email. Check and login");
     } catch (error) {
       alert((error as any).message);
     } finally {
@@ -28,7 +26,7 @@ export default function ForgotPasswordPage() {
 
   const form_label = "Forgot Password";
   const form_label_description =
-    "Please enter your email address below to receive a password reset link";
+    "Please enter your email address below to receive a password";
   const submit_button_label = "Submit";
 
   return (
@@ -72,29 +70,41 @@ export default function ForgotPasswordPage() {
                 layout={"vertical"}
                 requiredMark={false}
               >
-                <ForgotPasswordForm is_success={is_succeed} />
-                {is_succeed && success_msg && (
-                  <Form.Item noStyle={true}>
-                    <div className={"text-[#29CC39] text-xl"}>
-                      {success_msg}
-                    </div>
-                  </Form.Item>
-                )}
-                <Form.Item>
-                  <Button
-                    type={"primary"}
+                <Form.Item
+                  label={"Enter your email address"}
+                  name={"email"}
+                  hasFeedback={true}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Email address is required.",
+                    },
+                    {
+                      type: "email",
+                      message: "Please enter your email address.",
+                    },
+                  ]}
+                >
+                  <Input
+                    id={"forgot-password-email"}
+                    autoComplete={"off"}
                     size={"large"}
-                    htmlType={"submit"}
-                    block
-                    className={classNames({
-                      "!bg-[#4582E9]": !is_succeed && is_submit_loading,
-                      "!bg-[#29CC39]": is_succeed,
-                    })}
-                    loading={is_submit_loading}
-                  >
-                    {submit_button_label}
-                  </Button>
+                  />
                 </Form.Item>
+
+                <Button
+                  type={"primary"}
+                  size={"large"}
+                  htmlType={"submit"}
+                  block
+                  className={classNames({
+                    "!bg-[#4582E9]": !is_succeed && is_submit_loading,
+                    "!bg-[#29CC39]": is_succeed,
+                  })}
+                  loading={is_submit_loading}
+                >
+                  {submit_button_label}
+                </Button>
               </Form>
             </div>
           </div>
